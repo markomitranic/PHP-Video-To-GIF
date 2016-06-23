@@ -1,5 +1,11 @@
 <?php
 
+// Author Marko Mitranic
+// https://github.com/markomitranic/
+// version 0.1 | 24.06.2016
+// Requires ffmpeg to be installed on the system. Requires LIBASS add-on
+// brew install ffmpeg --with-libass
+
 if (isset($_GET['video']) && isset($_GET['captionID'])) {
 	echo createGifFromVideo($_GET['video'], $_GET['captionID']); // video filename, caption number
 	die;
@@ -8,6 +14,28 @@ if (isset($_GET['video']) && isset($_GET['captionID'])) {
 }
 
 
+
+// This function is dangerous!!!
+// All gifs need to be deleted first.
+// It can take over 15 minutes for it to finish.
+// Only way to track the progress is to check if DIE is echoed.
+// recreateALL();
+function recreateALL() {
+	$json_url = "json.json";
+	$json = file_get_contents($json_url);
+	$data = json_decode($json, TRUE);
+
+	foreach ($data as $key => $value) {
+		$inner = $key;
+		foreach ($data[$key] as $key => $value) {
+			createGifFromVideo($inner, $key);
+		}
+	}
+	echo 'DIE';
+}
+
+
+// PROCEDURAL LIBRARY STARTS HERE
 
 function createGifFromVideo($video, $captionID) {
 
@@ -49,10 +77,10 @@ function getCaption($video, $id) {
 
 function addCaption($video, $caption) {
 	$subtitle = createSubtitle($caption);
-	$newVideo = str_replace(".srt", ".mov", $subtitle);
+	$newVideo = str_replace(".ass", ".mov", $subtitle);
 
 	// ffmpeg -i video.avi -vf subtitles=subtitle.srt out.avi
-	shell_exec(ffmpeg('-i assets/'. $video .'.mov -vf subtitles='. $subtitle .' '. $newVideo));
+	$output = shell_exec(ffmpeg('-i assets/'. $video .'.mov -vf ass='. $subtitle .' '. $newVideo .' 2>&1'));
 	unlink($subtitle);
 
 	return $newVideo;
@@ -60,7 +88,7 @@ function addCaption($video, $caption) {
 
 function createSubtitle($text) {
 	// Set up the basics
-	$name = uniqid() . '.srt';
+	$name = uniqid() . '.ass';
 	$path = 'build/tmp/';
 
 	// Check if temporary file exists.
@@ -69,7 +97,7 @@ function createSubtitle($text) {
 	}
 
 	// Copy subtitle template
-	copy('assets/title.srt', $path . $name);
+	copy('assets/subtitle.ass', $path . $name);
 
 	$file = fopen($path . $name, 'a');
 	    fwrite($file, $text);
