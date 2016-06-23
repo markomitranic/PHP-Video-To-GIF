@@ -1,6 +1,12 @@
 <?php
 
-createGIF('cut1-1', 7); // video filename, caption number
+if (isset($_GET['video']) && isset($_GET['captionID'])) {
+	echo createGifFromVideo($_GET['video'], $_GET['captionID']); // video filename, caption number
+	die;
+} else {
+	die('false');
+}
+
 
 
 function createGifFromVideo($video, $captionID) {
@@ -9,11 +15,11 @@ function createGifFromVideo($video, $captionID) {
 
 
 	if (!file_exists('build/' . $gif)) {
-		$videoWithCaption = addCaption($video, getCaption($captionID));
+		$videoWithCaption = addCaption($video, getCaption($video, $captionID));
 		$gifSrc = videoToGif($videoWithCaption, $gif);
-		echo 'build/'. $gifSrc; // Print the new gif url
+		return 'build/'. $gifSrc; // Print the new gif url
 	} else {
-		echo 'build/' . $gif;
+		return 'build/' . $gif;
 	}
 }
 
@@ -33,8 +39,12 @@ function videoToGif($video, $gif) {
 	return $gif;
 }
 
-function getCaption($id) {
-	return 'Marko je car!';
+function getCaption($video, $id) {
+	$json_url = "json.json";
+	$json = file_get_contents($json_url);
+	$data = json_decode($json, TRUE);
+
+	return $data[$video][$id];
 }
 
 function addCaption($video, $caption) {
